@@ -61,6 +61,7 @@ module Enumerable
 
   def my_all?
     return self.to_enum unless block_given?
+
     if Array === self then
       arr = []
       self.my_each do |element|
@@ -82,6 +83,7 @@ module Enumerable
 
   def my_any?
     return self.to_enum unless block_given?
+
     if Array === self then
       arr = []
       self.my_each do |element|
@@ -103,6 +105,7 @@ module Enumerable
 
   def my_none?
     return self.to_enum unless block_given?
+    
     if Array === self then
       arr = []
       self.my_each do |element|
@@ -124,51 +127,70 @@ module Enumerable
 
   def my_count(num = "!@#$%")
     if block_given? then
-    if Array === self then
-      arr = []
-      self.my_each do |element|
-        if yield element
-          arr << element
-        end
-      end
-      arr.size
-    else
-      hash = {}
-      self.my_each do |k, v|
-        if yield k,v
-          hash[k] = v
-        end
-      end
-      hash.size 
-    end 
-    elsif !num.eql?("!@#$%")
       if Array === self then
-        self.my_select{|item| item == num}.size
-      else
-      return 0
-      end
+        arr = []
+        self.my_each do |element|
+          if yield element
+            arr << element
+          end
+        end
+        arr.size
+        else
+          hash = {}
+          self.my_each do |k, v|
+            if yield k,v
+              hash[k] = v
+            end
+          end
+          hash.size 
+        end 
+        elsif !num.eql?("!@#$%")
+          if Array === self then
+            self.my_select{|item| item == num}.size
+          else
+            return 0
+          end
     else
       self.size
     end
   end
 
-  def my_map
+  def my_map(&block)
     return self.to_enum unless block_given?
     arr = []
     if Array === self then
       self.my_each do |element|
-        arr.push(yield element)
+        arr << block.call(element)
       end
     else
       self.my_each do |k, v|
-        arr.push(yield k, v)
+        arr << block.call(k, v)
       end
     end
     arr
   end
 
-  def my_inject
-    
+  def my_inject(*n)
+    if n == []
+      if Array == self then
+        result = 0
+        self.my_each do |element|
+          result = yield(result, element) 
+        end
+      else
+        arr = self.to_a.drop(1)
+        result = self.to_a[0]
+        arr.my_each_with_index do |element, idx|
+          result = yield(result, arr[idx])
+        end
+      end
+    else
+      result = n[0]
+      self.my_each do |element|
+        result = yield(result, element) 
+      end
+    end
+    result
   end
 
 end
@@ -283,8 +305,28 @@ puts "#my_map:"
 p array.my_map{|item| item * 2}
 puts "#map:"
 p array.map{|item| item * 2}
+
 puts "Hashes:"
 puts "#my_map:"
 p hash.my_map{|k, v| k > :a}
 puts "#map:"
 p hash.map{|k, v| k > :a}
+
+puts "#my_inject vs inject"
+puts "Arrays:"
+puts "#my_inject:"
+p array.my_inject{|sum, n| sum * n}
+puts "#inject"
+p array.inject{|sum,n| sum * n}
+
+puts "Hashes:"
+puts "#my_inject:"
+hash.my_inject{|k, v| p "#{k}, #{v} #{k}"}
+puts "#inject:"
+hash.inject{|k, v| p "#{k}, #{v} #{k}"}
+
+def multiply_els(arr)
+  arr.my_inject{|result, value| result * value}
+end
+
+p multiply_els([2, 4, 5])
